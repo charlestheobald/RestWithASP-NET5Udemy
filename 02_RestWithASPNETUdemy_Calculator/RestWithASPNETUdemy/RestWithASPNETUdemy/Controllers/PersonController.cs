@@ -1,58 +1,125 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using RestWithASPNETUdemy.Model;
+using RestWithASPNETUdemy.Business.Implementations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using RestWithASPNETUdemy.Business;
+using RestWithASPNETUdemy.Data.VO;
+using RestWithASPNETUdemy.Hypermedia.Filters;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RestWithASPNETUdemy.Controllers
 {
+    [ApiVersion("1")]
     [ApiController]
-    [Route("[controller]")]
+    [Authorize("Bearer")]
+    [Route("api/[controller]/v{version:apiVersion}")]
     public class PersonController : ControllerBase
     {
        
         private readonly ILogger<PersonController> _logger;
+        private IPersonBusiness _personBusiness;
 
-        public PersonController(ILogger<PersonController> logger)
+        public PersonController(ILogger<PersonController> logger, IPersonBusiness personService)
         {
             _logger = logger;
+            _personBusiness = personService;
         }
 
-        [HttpGet("sum/{firstNumber}/{secondNumber}")]
-        public IActionResult Soma(string firstNumber, string secondNumber)
+        [HttpGet("{sortDirection}/{pageSize}/{page}")]
+        [ProducesResponseType((200), Type = typeof(List<PersonVO>))]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [TypeFilter(typeof(HyperMediaFilter))]
+        public IActionResult Get(
+            [FromQuery] string name,
+            string sortDirection,
+            int pageSize,
+            int page)
         {
-            if (IsNumeric(firstNumber) && IsNumeric(secondNumber))
-            {
-                var sum = ConvertToDecimal(firstNumber) + ConvertToDecimal(secondNumber);
-                return Ok(sum.ToString());
-            }
-            return BadRequest("Invalid Input")
-          }
-
-        private bool IsNumeric(string strNumber)
-        {
-            double number;
-
-            bool isNumber = double.TryParse(
-                strNumber, 
-                System.Globalization.NumberStyles.Any, 
-                System.Globalization.NumberFormatInfo.InvariantInfo,
-                out number);
-           
-            return isNumber;
-            
-        }
+            return Ok(_personBusiness.FindWithPagedSearch(name, sortDirection, pageSize, page));
+       
+        } 
         
-        private decimal ConvertToDecimal(string strNumber)
+        [HttpGet("{id}")]
+        [ProducesResponseType((200), Type = typeof(PersonVO))]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [TypeFilter(typeof(HyperMediaFilter))]
+        public IActionResult Get(long id)
         {
-            decimal decimalValue;
-            if (decimal.TryParse(strNumber,out decimalValue))
-            {
-                return decimalValue;
-            }
-            return 0;
+            var person = _personBusiness.FindByID(id);
+            if (person == null) return NotFound();
+            return Ok(person);
         }
+
+        [HttpGet("FindPersonByName")]
+        [ProducesResponseType((200), Type = typeof(PersonVO))]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [TypeFilter(typeof(HyperMediaFilter))]
+        public IActionResult Get([FromQuery] string firstName, [FromQuery] string lastName)
+        {
+            var person = _personBusiness.FindByName(firstName, lastName);
+            if (person == null) return NotFound();
+            return Ok(person);
+        }
+
+        [HttpPost]
+        [ProducesResponseType((200), Type = typeof(PersonVO))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [TypeFilter(typeof(HyperMediaFilter))]
+        public IActionResult Post([FromBody]PersonVO person)
+        {
+            
+            if (person == null) return BadRequest();
+            return Ok(_personBusiness.Create(person));
+        } 
+        
+        [HttpPut]
+        [ProducesResponseType((200), Type = typeof(PersonVO))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [TypeFilter(typeof(HyperMediaFilter))]
+        public IActionResult Put([FromBody]PersonVO person)
+        {
+            
+            if (person == null) return BadRequest();
+            return Ok(_personBusiness.Update(person));
+        }
+
+
+
+        [HttpPatch("{id}")]
+        [ProducesResponseType((200), Type = typeof(PersonVO))]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [TypeFilter(typeof(HyperMediaFilter))]
+        public IActionResult Patch(long id)
+        {
+            var person = _personBusiness.Disable(id);
+            return Ok(person);
+        }
+
+
+        [HttpDelete("{id}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        public IActionResult Delete(long id)
+        {
+            _personBusiness.Delete(id);
+            return NoContent();
+        }
+
 
     }
 }
