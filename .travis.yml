@@ -15,10 +15,10 @@ deploy:
   provider: script
   script:
     docker tag rest-with-asp-net-udemy-db: lastet $DOCKER_USERNAME/rest-with-asp-net-udemy:$TRAVIS_JOB_ID;
-    docker tag rest-with-asp-net-udemy-db: lastet $DOCKER_USERNAME/rest-with-asp-net-udemy-db:$TRAVIS_JOB_ID;    
+    docker tag rest-with-asp-net-udemy-db: lastet $DOCKER_USERNAME/rest-with-asp-net-udemy-db:$TRAVIS_JOB_ID;
     docker push $DOCKER_USERNAME/rest-with-asp-net-udemy: $TRAVIS_JOB_ID;
     docker push $DOCKER_USERNAME/rest-with-asp-net-udemy-db: $TRAVIS_JOB_ID;
   on:
-    branch: main
+    branch: master
 notifications:
   email: false
